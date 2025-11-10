@@ -14,11 +14,11 @@ on:
       mariadbTag:
         description: "Bitnami MariaDB tag"
         required: true
-        default: 11.4.3-debian-12-r0
+        default: latest
       redisTag:
         description: "Bitnami Redis tag"
         required: true
-        default: 7.4.1-debian-12-r0
+        default: latest
 
 jobs:
   mirror:
