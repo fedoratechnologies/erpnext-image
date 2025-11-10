@@ -1,0 +1,59 @@
+name: Mirror ERPNext Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      targetRegistry:
+        description: "Registry namespace to push into (e.g., registry.gitlab.com/fedoratechnologies/erpnext)"
+        required: true
+        default: registry.gitlab.com/fedoratechnologies/erpnext
+      erpnextTag:
+        description: "ERPNext tag from frappe/erpnext"
+        required: true
+        default: v15.87.1
+      mariadbTag:
+        description: "Bitnami MariaDB tag"
+        required: true
+        default: 11.4.3-debian-12-r0
+      redisTag:
+        description: "Bitnami Redis tag"
+        required: true
+        default: 7.4.1-debian-12-r0
+
+jobs:
+  mirror:
+    name: Copy images to target registry
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TARGET_REGISTRY: ${{ github.event.inputs.targetRegistry }}
+    steps:
+      - name: Install skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+
+      - name: Mirror ERPNext
+        run: |
+          skopeo copy \
+            --src-creds "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}" \
+            --dest-creds "${{ secrets.GITLAB_USERNAME }}:${{ secrets.GITLAB_TOKEN }}" \
+            docker://frappe/erpnext:${{ github.event.inputs.erpnextTag }} \
+            docker://${{ env.TARGET_REGISTRY }}/erpnext:${{ github.event.inputs.erpnextTag }}
+
+      - name: Mirror Bitnami MariaDB
+        run: |
+          skopeo copy \
+            --src-creds "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}" \
+            --dest-creds "${{ secrets.GITLAB_USERNAME }}:${{ secrets.GITLAB_TOKEN }}" \
+            docker://bitnami/mariadb:${{ github.event.inputs.mariadbTag }} \
+            docker://${{ env.TARGET_REGISTRY }}/mariadb:${{ github.event.inputs.mariadbTag }}
+
+      - name: Mirror Bitnami Redis
+        run: |
+          skopeo copy \
+            --src-creds "${{ secrets.DOCKERHUB_USERNAME }}:${{ secrets.DOCKERHUB_TOKEN }}" \
+            --dest-creds "${{ secrets.GITLAB_USERNAME }}:${{ secrets.GITLAB_TOKEN }}" \
+            docker://bitnami/redis:${{ github.event.inputs.redisTag }} \
+            docker://${{ env.TARGET_REGISTRY }}/redis:${{ github.event.inputs.redisTag }}
